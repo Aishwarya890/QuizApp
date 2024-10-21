@@ -1,5 +1,5 @@
 {
-  "homepage": "https://aishwarya890.github.io/QuizApplication",
+  "homepage": "https://aishwarya890.github.io/QuizApp",
   "name": "quiz-app",
   "version": "0.1.0",
   "private": true,
@@ -43,6 +43,6 @@
     ]
   },
   "devDependencies": {
-    "gh-pages": "^6.1.1"
+    "gh-pages": "^6.2.0"
   }
 }
