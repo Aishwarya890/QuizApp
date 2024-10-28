@@ -13,6 +13,7 @@
 //     const [correctAnswers, setCorrectAnswers] = useState(['']);
 //     const [quizzes, setQuizzes] = useState([]);
 //     const [loading, setLoading] = useState(false);
+//     const [selectedQuizId, setSelectedQuizId] = useState(null); // State for selected quiz for update
 
 //     useEffect(() => {
 //         const fetchQuizzes = async () => {
@@ -83,6 +84,7 @@
 //         setQuestions(['']);
 //         setOptions([['']]);
 //         setCorrectAnswers(['']);
+//         setSelectedQuizId(null); // Reset selected quiz ID
 //     };
 
 //     const handleSubmit = async (e) => {
@@ -118,17 +120,36 @@
 //                 correctAnswers,
 //             };
 
-//             await axios.post('http://localhost:8080/api/admin/quizzes', quiz, {
-//                 withCredentials: true // Include credentials in the request
-//             });
+//             if (selectedQuizId) {
+//                 // Update the quiz if a quiz is selected
+//                 await axios.put(`http://localhost:8080/api/admin/quizzes/${selectedQuizId}`, quiz, {
+//                     withCredentials: true // Include credentials in the request
+//                 });
+//                 alert('Quiz updated successfully!');
+//             } else {
+//                 // Create new quiz if no quiz is selected
+//                 await axios.post('http://localhost:8080/api/admin/quizzes', quiz, {
+//                     withCredentials: true // Include credentials in the request
+//                 });
+//                 alert('Quiz created successfully!');
+//             }
 
-//             alert('Quiz created successfully!');
 //             resetForm();
 //         } catch (error) {
-//             alert('Error creating quiz: ' + error.message);
+//             alert('Error creating/updating quiz: ' + error.message);
 //         } finally {
 //             setLoading(false);
 //         }
+//     };
+
+//     const handleEditQuiz = (quiz) => {
+//         setSelectedQuizId(quiz.id);
+//         setSubject(quiz.subject);
+//         setDeadline(quiz.deadline);
+//         setAccessCode(quiz.accessCode);
+//         setQuestions(quiz.questions);
+//         setOptions(quiz.options);
+//         setCorrectAnswers(quiz.correctAnswers);
 //     };
 
 //     return (
@@ -190,6 +211,7 @@
 //                                         required
 //                                     />
 //                                 ))}
+
 //                                 <input
 //                                     type="text"
 //                                     className="form-control mb-2"
@@ -214,19 +236,24 @@
 //                                 Add Question
 //                             </button>
 //                             <button type="submit" className="btn btn-success">
-//                                 Create Quiz
+//                                 {selectedQuizId ? 'Update Quiz' : 'Create Quiz'}
 //                             </button>
 //                         </div>
 //                     </form>
 
-//                     <h3 className="text-center mt-5">Delete Quiz</h3>
+//                     <h3 className="text-center mt-5">Manage Quizzes</h3>
 //                     <ul className="list-group mt-3 shadow-sm">
 //                         {quizzes.map((quiz) => (
 //                             <li key={quiz.id} className="list-group-item d-flex justify-content-between align-items-center">
 //                                 {quiz.subject}
-//                                 <button className="btn btn-danger" onClick={() => handleDeleteQuiz(quiz.id)}>
-//                                     Delete Quiz
-//                                 </button>
+//                                 <div>
+//                                     <button className="btn btn-warning mx-1" onClick={() => handleEditQuiz(quiz)}>
+//                                         Edit
+//                                     </button>
+//                                     <button className="btn btn-danger" onClick={() => handleDeleteQuiz(quiz.id)}>
+//                                         Delete
+//                                     </button>
+//                                 </div>
 //                             </li>
 //                         ))}
 //                     </ul>
@@ -238,7 +265,6 @@
 
 // export default AdminPanel;
 
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -246,7 +272,8 @@ import './Admin.css';
 
 const AdminPanel = () => {
     const [subject, setSubject] = useState('');
-    const [deadline, setDeadline] = useState('');
+    const [startDateTime, setStartDateTime] = useState(''); // State for start date
+    const [endDateTime, setEndDateTime] = useState(''); // State for end date
     const [accessCode, setAccessCode] = useState(''); // State for access code
     const [questions, setQuestions] = useState(['']);
     const [options, setOptions] = useState([['']]);
@@ -319,7 +346,8 @@ const AdminPanel = () => {
 
     const resetForm = () => {
         setSubject('');
-        setDeadline('');
+        setStartDateTime(''); // Reset start date
+        setEndDateTime(''); // Reset end date
         setAccessCode(''); // Reset access code
         setQuestions(['']);
         setOptions([['']]);
@@ -329,11 +357,17 @@ const AdminPanel = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const deadlineDate = new Date(deadline);
         const currentDate = new Date();
+        const startDateObj = new Date(startDateTime);
+        const endDateObj = new Date(endDateTime);
 
-        if (deadlineDate <= currentDate) {
-            alert('The deadline must be in the future.');
+        if (startDateObj < currentDate) {
+            alert('The start date must be in the future.');
+            return;
+        }
+
+        if (endDateObj <= startDateObj) {
+            alert('The end date must be after the start date.');
             return;
         }
 
@@ -353,7 +387,8 @@ const AdminPanel = () => {
         try {
             const quiz = {
                 subject,
-                deadline,
+                startDateTime, // Include start date in the quiz object
+                endDateTime, // Include end date in the quiz object
                 accessCode, // Include access code in the quiz object
                 questions,
                 options,
@@ -385,7 +420,8 @@ const AdminPanel = () => {
     const handleEditQuiz = (quiz) => {
         setSelectedQuizId(quiz.id);
         setSubject(quiz.subject);
-        setDeadline(quiz.deadline);
+        setStartDateTime(quiz.startDateTime); // Set start date for editing
+        setEndDateTime(quiz.endDateTime); // Set end date for editing
         setAccessCode(quiz.accessCode);
         setQuestions(quiz.questions);
         setOptions(quiz.options);
@@ -410,12 +446,23 @@ const AdminPanel = () => {
                                 required
                             />
                         </div>
-                        <div className="form-group mb-3">
+                        <div className="form-group mb-3">Start Date Time
                             <input
                                 type="datetime-local"
                                 className="form-control"
-                                value={deadline}
-                                onChange={(e) => setDeadline(e.target.value)}
+                                
+                                value={startDateTime}
+                                onChange={(e) => setStartDateTime(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="form-group mb-3">End Date Time
+                            <input
+                                type="datetime-local"
+                                className="form-control"
+                                 
+                                value={endDateTime}
+                                onChange={(e) => setEndDateTime(e.target.value)}
                                 required
                             />
                         </div>
@@ -472,31 +519,36 @@ const AdminPanel = () => {
                         ))}
 
                         <div className="d-flex justify-content-between">
-                            <button type="button" className="btn btn-primary" onClick={handleAddQuestion}>
+                            <button type="button" className="btn btn-secondary" onClick={handleAddQuestion}>
                                 Add Question
                             </button>
-                            <button type="submit" className="btn btn-success">
+                            <button type="submit" className="btn btn-primary">
                                 {selectedQuizId ? 'Update Quiz' : 'Create Quiz'}
                             </button>
                         </div>
                     </form>
 
-                    <h3 className="text-center mt-5">Manage Quizzes</h3>
-                    <ul className="list-group mt-3 shadow-sm">
-                        {quizzes.map((quiz) => (
-                            <li key={quiz.id} className="list-group-item d-flex justify-content-between align-items-center">
-                                {quiz.subject}
-                                <div>
-                                    <button className="btn btn-warning mx-1" onClick={() => handleEditQuiz(quiz)}>
+                    <h3 className="mt-5">Existing Quizzes</h3>
+                    <div className="quiz-list mt-3">
+                        {quizzes.length > 0 ? (
+                            quizzes.map((quiz) => (
+                                <div key={quiz.id} className="quiz-item mb-3 p-3 border rounded">
+                                    <h4>{quiz.subject}</h4>
+                                    <p>Start Date: {new Date(quiz.startDateTime).toLocaleString()}</p>
+                                    <p>End Date: {new Date(quiz.endDateTime).toLocaleString()}</p>
+                                    <p>Access Code: {quiz.accessCode}</p>
+                                    <button className="btn btn-warning me-2" onClick={() => handleEditQuiz(quiz)}>
                                         Edit
                                     </button>
                                     <button className="btn btn-danger" onClick={() => handleDeleteQuiz(quiz.id)}>
                                         Delete
                                     </button>
                                 </div>
-                            </li>
-                        ))}
-                    </ul>
+                            ))
+                        ) : (
+                            <div>No quizzes found.</div>
+                        )}
+                    </div>
                 </>
             )}
         </div>

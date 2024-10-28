@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useEffect } from 'react';
 import Home from './Components/Home';
 import Login from './Components/Login';
 import Register from './Components/Registration';
@@ -11,6 +12,10 @@ import AdminApprovalPage from './Components/AdminApprovalPage';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
+  useEffect(() => {
+    document.title = 'QuizApp';  // Update the title here
+   
+  }, []);
   
   return (
     <Router>
